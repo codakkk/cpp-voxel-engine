@@ -6,7 +6,8 @@
 #define INPUT_HPP
 #include "GLFW/glfw3.h"
 
-namespace Input {
+namespace Input
+{
 	void Init(GLFWwindow* window);
 
 	void ProcessKeyboard();
@@ -16,6 +17,14 @@ namespace Input {
 	bool IsKeyPressed(int key); // pressed this frame only
 
 	bool IsKeyReleased(int key);
+
+	float GetMouseX();
+	float GetMouseY();
+
+	float GetMouseOffsetX();
+	float GetMouseOffsetY();
+
+	void ResetMouse();
 } // Utils
 
 #endif //INPUT_HPP

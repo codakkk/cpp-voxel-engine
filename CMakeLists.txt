@@ -65,8 +65,6 @@ add_executable(${PROJECT_NAME}
         Camera.cpp Camera.hpp
         Chunk.cpp Chunk.hpp
         Voxel.cpp Voxel.hpp
-        ChunkMesh.cpp
-        ChunkMesh.hpp
         Enums.hpp
         Utils/Vbo.cpp
         Utils/Vbo.hpp
@@ -80,6 +78,15 @@ add_executable(${PROJECT_NAME}
         Engine.hpp
         Utils/Input.cpp
         Utils/Input.hpp
+        Utils/Vertex.hpp
+        MeshBuilder.cpp
+        MeshBuilder.hpp
+        Utils/IndexBuffer.cpp
+        Utils/IndexBuffer.hpp
+        Constants.hpp
+        Rendering/Mesh.hpp
+        Rendering/ChunkMesh.cpp
+        Rendering/ChunkMesh.hpp
 )
 
 # Link everything

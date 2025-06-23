@@ -9,12 +9,12 @@ namespace VoxelEngine
 {
 	enum BlockFaceType
 	{
-		top = 0,
-		bottom = 1,
-		left = 2,
-		right = 3,
-		front = 4,
-		backward = 5
+		Top = 0,
+		Bottom = 1,
+		Left = 2,
+		Right = 3,
+		Front = 4,
+		Backward = 5
 	};
 }
 

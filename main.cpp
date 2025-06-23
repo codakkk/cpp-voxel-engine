@@ -4,15 +4,18 @@
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
+
+#include "Constants.hpp"
+
 #include "Engine.hpp"
 #include "Utils/Input.hpp"
-#include "Utils/ShaderProgram.hpp"
-#include "Utils/Vao.hpp"
+
 
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
 #include <iostream>
+#include <sstream>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -24,7 +27,7 @@ float g_RotationSpeed = 45.0f;
 
 bool g_ShowWireframe = false;
 
-void renderUi(const float deltaTime)
+void renderUi(const float deltaTime, const VoxelEngine::Engine& engine)
 {
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -52,34 +55,25 @@ void renderUi(const float deltaTime)
 		ImGui::Checkbox("Wireframe Mode", &g_ShowWireframe);
 	}
 
-
-
 	ImGui::End();
+
+	engine.RenderUi();
+
 
 	// Rendering
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void render(GLFWwindow* window, const VoxelEngine::Engine& engine, const float deltaTime)
+void render(GLFWwindow* window, VoxelEngine::Engine& engine, const float deltaTime)
 {
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	const float aspect = static_cast<float>(width) / static_cast<float>(height);
-
-	glViewport(0, 0, width, height);
-
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(glm::value_ptr(projection));
-
 	glPolygonMode(GL_FRONT_AND_BACK, g_ShowWireframe ? GL_LINE : GL_FILL);
 
 	engine.Render();
 
 	glDisable(GL_DEPTH_TEST);
 
-	renderUi(deltaTime);
+	renderUi(deltaTime, engine);
 
     glfwSwapBuffers(window);
 
@@ -128,7 +122,22 @@ int main()
 
     double lastTime = glfwGetTime();
 
-	auto engine = VoxelEngine::Engine();
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+
+	auto engine = VoxelEngine::Engine(width, height);
+
+	glfwSetWindowUserPointer(window, &engine);
+
+	glfwSetFramebufferSizeCallback(window,
+		[](GLFWwindow* window, int width, int height)
+		{
+		const auto engine = static_cast<VoxelEngine::Engine*>(glfwGetWindowUserPointer(window));
+		if (engine != nullptr)
+		{
+			engine->OnWindowResize(width, height);
+		}
+	});
 
 	Input::Init(window);
 
@@ -148,6 +157,8 @@ int main()
 
     	render(window, engine, deltaTime);
 
+		Input::ResetMouse();
+
     	g_LastFrameTime += deltaTime;
     	g_Frames++;
     	if (g_LastFrameTime >= 1.0f)
@@ -156,7 +167,10 @@ int main()
     		g_LastFrames = g_Frames;
     		g_Frames = 0;
 
-    		std::cout << "FPS: " << g_LastFrames << std::endl;
+    		std::stringstream ss;
+    		ss << "Voxels - FPS: " << g_LastFrames << "Dt: " << deltaTime * 1000 << "ms";
+
+    		glfwSetWindowTitle(window, ss.str().c_str());
     	}
 
         lastTime = now;

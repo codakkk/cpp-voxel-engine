@@ -18,9 +18,10 @@ namespace Utils {
 		glDeleteShader(m_id);
 	}
 
-	void Shader::Compile(const char *sourceCode) const
+	void Shader::Compile(const std::string& source) const
 	{
-		glShaderSource(m_id, 1, &sourceCode, nullptr);
+		const char* c = source.c_str();
+		glShaderSource(m_id, 1, &c, nullptr);
 		glCompileShader(m_id);
 
 		int success;
@@ -33,6 +34,4 @@ namespace Utils {
 			std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
 		}
 	}
-
-
 } // Utils

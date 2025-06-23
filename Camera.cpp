@@ -1,63 +1,75 @@
-//
-// Created by Ciro on 06/20/2025.
-//
-
 #include "Camera.hpp"
 
 #include "Utils/Input.hpp"
 
 namespace VoxelEngine
 {
-
-	Camera::Camera(glm::vec3 startPos, glm::vec3 startRotation)
-		: position(startPos), rotation(startRotation)
+	Camera::Camera(glm::vec3 position, float yaw, float pitch,
+	               float fovDeg, float aspectRatio, float nearPlane, float farPlane)
+	    : Position(position), Yaw(yaw), Pitch(pitch),
+	      FovDeg(fovDeg), AspectRatio(aspectRatio), NearPlane(nearPlane), FarPlane(farPlane)
 	{
-		updateVectors();
+	    UpdateCameraVectors();
+	    UpdateProjectionMatrix();
+	    UpdateViewMatrix();
 	}
 
-
-	glm::mat4 Camera::GetViewMatrix() const
+	void Camera::SetPerspective(float fovDeg, float aspectRatio, float nearPlane, float farPlane)
 	{
-		return glm::lookAt(position, position + m_front, m_up);
+	    FovDeg = fovDeg;
+	    AspectRatio = aspectRatio;
+	    NearPlane = nearPlane;
+	    FarPlane = farPlane;
+	    UpdateProjectionMatrix();
+	    UpdateViewMatrix(); // viewProj also depends on this
 	}
 
-	void Camera::ProcessInput(const float deltaTime, const bool forward, const bool backward, const bool left, const bool right, const bool upKey, const bool downKey)
+	void Camera::ProcessKeyboard(float deltaTime)
 	{
-		const float velocity = speed * deltaTime;
+	    float velocity = MovementSpeed * deltaTime;
 
-		if (Input::IsKeyDown(GLFW_KEY_W)) position += m_front * velocity;
-		if (Input::IsKeyDown(GLFW_KEY_S)) position -= m_front * velocity;
-		if (Input::IsKeyDown(GLFW_KEY_A)) position -= m_right * velocity;
-		if (Input::IsKeyDown(GLFW_KEY_D)) position += m_right * velocity;
-		if (Input::IsKeyDown(GLFW_KEY_SPACE)) position += m_up * velocity;
-		if (Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT)) position -= m_up * velocity;
+		auto deltaForward = Input::IsKeyDown(GLFW_KEY_W) ? 1.0f : Input::IsKeyDown(GLFW_KEY_S) ? -1.0f : 0.0f;
+		auto deltaRight = Input::IsKeyDown(GLFW_KEY_D) ? 1.0f : Input::IsKeyDown(GLFW_KEY_A) ? -1.0f : 0.0f;
+		auto deltaUp = Input::IsKeyDown(GLFW_KEY_SPACE) ? 1.0f : Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) ? -1.0f : 0.0f;
+
+	    Position += Front * deltaForward * velocity;
+	    Position += Right * deltaRight * velocity;
+	    Position += WorldUp * deltaUp * velocity;
+	    UpdateViewMatrix();
 	}
 
-	void Camera::ProcessMouse(float offsetX, float offsetY, const bool constrainPitch)
+	void Camera::ProcessMouseMovement()
 	{
-		offsetX *= sensitivity;
-		offsetY *= sensitivity;
+	    Yaw += Input::GetMouseOffsetX() * MouseSensitivity;
+	    Pitch += Input::GetMouseOffsetY() * MouseSensitivity;
 
-		rotation.x += offsetX;
-		rotation.y += offsetY;
+	    if (Pitch > 89.0f) Pitch = 89.0f;
+	    if (Pitch < -89.0f) Pitch = -89.0f;
 
-		if (constrainPitch) {
-			if (rotation.y > 89.0f) rotation.y = 89.0f;
-			if (rotation.y < -89.0f) rotation.y = -89.0f;
-		}
-
-		updateVectors();
+	    UpdateCameraVectors();
+	    UpdateViewMatrix();
 	}
 
-	void Camera::updateVectors()
+	void Camera::UpdateCameraVectors()
 	{
-		glm::vec3 newFront;
-		newFront.x = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
-		newFront.y = sin(glm::radians(rotation.y));
-		newFront.z = sin(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
-		m_front = glm::normalize(newFront);
-		m_right = glm::normalize(glm::cross(m_front, m_worldUp));
-		m_up = glm::normalize(glm::cross(m_right, m_front));
+	    glm::vec3 front;
+	    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+	    front.y = sin(glm::radians(Pitch));
+	    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+	    Front = glm::normalize(front);
+
+	    Right = glm::normalize(glm::cross(Front, WorldUp));
+	    Up = glm::normalize(glm::cross(Right, Front));
 	}
 
+	void Camera::UpdateViewMatrix()
+	{
+	    viewMatrix = glm::lookAt(Position, Position + Front, Up);
+	    viewProjectionMatrix = projectionMatrix * viewMatrix;
+	}
+
+	void Camera::UpdateProjectionMatrix()
+	{
+	    projectionMatrix = glm::perspective(glm::radians(FovDeg), AspectRatio, NearPlane, FarPlane);
+	}
 }

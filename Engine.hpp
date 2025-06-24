@@ -28,7 +28,7 @@ public:
 
 	void Update(float deltaTime) const;
 
-	void RenderUi() const;
+	void RenderUi();
 
 	void Render();
 
@@ -37,16 +37,25 @@ private:
 
 	World::Chunk m_Chunk;
 
+	bool m_EnableCulling;
+	bool m_EnableVoxelFaceCulling;
+
+	bool m_IsMeshDirty;
+
 	GLuint m_VAO;
 	GLuint m_VBO;
+	GLuint m_EBO;
 
 	Utils::ShaderProgram m_ShaderProgram;
 
 	std::vector<Vertex> m_Vertices;
 	std::vector<GLuint> m_Indices;
 
-	std::unordered_map<BlockFaceType, glm::vec4[6]> m_BlockFaces;
+	GLuint m_IndexOffset;
 
+	std::unordered_map<BlockFaceType, glm::vec4[4]> m_BlockFaces;
+
+	void CreateMesh();
 	void AddFace(const glm::vec3& position, const i8Color3& color, BlockFaceType faceType);
 };
 

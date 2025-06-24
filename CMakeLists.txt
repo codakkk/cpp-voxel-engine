@@ -74,12 +74,11 @@ add_executable(${PROJECT_NAME}
         Utils/Input.cpp
         Utils/Input.hpp
         Utils/Vertex.hpp
-        Utils/IndexBuffer.cpp
-        Utils/IndexBuffer.hpp
         Constants.hpp
         Rendering/Mesh.hpp
         Rendering/ChunkMesh.cpp
         Rendering/ChunkMesh.hpp
+        Ray.hpp
 )
 
 # Link everything

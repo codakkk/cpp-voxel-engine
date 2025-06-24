@@ -23,9 +23,10 @@ namespace World
 
 		void BuildMesh();
 
-		void SetBlock(const glm::vec3& position, bool value);
+		bool SetBlock(const glm::vec3 &position, bool value);
 		bool GetBlock(const glm::vec3& position) const;
 
+		bool IsInBounds(const glm::vec3& position) const;
 	private:
 		glm::vec3 m_Position;
 		std::array<std::array<std::array<bool, CHUNK_SIZE_X>, CHUNK_SIZE_Y>, CHUNK_SIZE_Z> m_Data{};

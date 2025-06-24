@@ -27,7 +27,7 @@ float g_RotationSpeed = 45.0f;
 
 bool g_ShowWireframe = false;
 
-void renderUi(const float deltaTime, const VoxelEngine::Engine& engine)
+void renderUi(const float deltaTime, VoxelEngine::Engine& engine)
 {
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -105,6 +105,7 @@ int main()
 	}
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
 		Input::ProcessMouse(xpos, ypos);
 	});
@@ -151,6 +152,7 @@ int main()
         glfwPollEvents();
 
     	Input::ProcessKeyboard();
+    	Input::ProcessMouseButtons();
 
     	engine.Input(deltaTime);
     	engine.Update(deltaTime);

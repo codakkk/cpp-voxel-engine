@@ -12,11 +12,15 @@ namespace Input
 
 	void ProcessKeyboard();
 	void ProcessMouse(double xpos, double ypos);
+	void ProcessMouseButtons();
 
 	bool IsKeyDown(int key);
 	bool IsKeyPressed(int key); // pressed this frame only
 
 	bool IsKeyReleased(int key);
+
+	bool IsMouseDown(int button);
+	bool IsMousePressed(int button);
 
 	float GetMouseX();
 	float GetMouseY();

@@ -18,6 +18,20 @@ namespace VoxelEngine
 
 		Last
 	};
+
+	inline glm::ivec3 GetFaceOffset(const BlockFaceType face)
+	{
+		switch (face)
+		{
+		case Front:    return {  0,  0,  1 };
+		case Back:	   return {  0,  0, -1 };
+		case Left:     return { -1,  0,  0 };
+		case Right:    return {  1,  0,  0 };
+		case Top:      return {  0,  1,  0 };
+		case Bottom:   return {  0, -1,  0 };
+		default:       return { 0, 0, 0 };
+		}
+	}
 }
 
 #endif //ENUMS_HPP

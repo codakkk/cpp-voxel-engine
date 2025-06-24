@@ -40,7 +40,6 @@ static Ray MakeCenterScreenRay(const VoxelEngine::Camera& camera)
 static std::optional<std::tuple<glm::ivec3, VoxelEngine::BlockFaceType>> RaycastVoxelHit(const Ray& ray, const World::Chunk& chunk, float maxDistance = 100.0f)
 {
 	glm::ivec3 lastBlock;
-	glm::vec3 pos = ray.origin;
 
 	for (float t = 0.0f; t < maxDistance; t += 0.01f)
 	{

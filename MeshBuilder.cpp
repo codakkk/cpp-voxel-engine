@@ -4,7 +4,7 @@
 
 #include "MeshBuilder.hpp"
 
-#include "Chunk.hpp"
+#include "World/Chunk.hpp"
 #include "Utils/IndexBuffer.hpp"
 #include "glm/vec4.hpp"
 
@@ -86,7 +86,7 @@ namespace VoxelEngine
 
 	MeshBuilder::~MeshBuilder() {}
 
-	void MeshBuilder::Build(const Chunk& chunk)
+	void MeshBuilder::Build(const World::Chunk& chunk)
 	{
 		m_Vertices.clear();
 
@@ -125,7 +125,7 @@ namespace VoxelEngine
 		}
 	}
 
-	void MeshBuilder::AddFace(const Chunk &chunk, BlockFaceType faceType)
+	void MeshBuilder::AddFace(const World::Chunk &chunk, BlockFaceType faceType)
 	{
 		glm::vec4 translation = glm::vec4(glm::vec3(0,0,0), 0.0f);
 		Vertex v[4];

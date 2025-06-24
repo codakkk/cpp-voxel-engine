@@ -63,7 +63,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_executable(${PROJECT_NAME}
         main.cpp
         Camera.cpp Camera.hpp
-        Chunk.cpp Chunk.hpp
+        World/Chunk.cpp World/Chunk.hpp
         Voxel.cpp Voxel.hpp
         Enums.hpp
         Utils/Vbo.cpp

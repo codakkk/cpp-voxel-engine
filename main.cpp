@@ -1,5 +1,5 @@
 #include "Camera.hpp"
-#include "Chunk.hpp"
+#include "World/Chunk.hpp"
 
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/glad.h>
@@ -76,7 +76,7 @@ void render(GLFWwindow* window, VoxelEngine::Engine& engine, const float deltaTi
 	renderUi(deltaTime, engine);
 
     glfwSwapBuffers(window);
-
+	glFinish();
 }
 
 

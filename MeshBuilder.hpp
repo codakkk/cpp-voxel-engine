@@ -14,6 +14,10 @@
 #include <vector>
 
 
+namespace World
+{
+class Chunk;
+}
 
 namespace VoxelEngine {
 
@@ -24,13 +28,13 @@ namespace VoxelEngine {
 		MeshBuilder();
 		~MeshBuilder();
 
-		void Build(const Chunk &chunk);
+		void Build(const World::Chunk &chunk);
 
 		std::uint32_t VerticesCount;
 
 		Utils::VAO VAO;
 
-		void AddFace(const Chunk& chunk, BlockFaceType faceType);
+		void AddFace(const World::Chunk& chunk, BlockFaceType faceType);
 	private:
 
 		std::vector<Vertex> m_Vertices;

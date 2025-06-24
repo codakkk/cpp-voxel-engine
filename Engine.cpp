@@ -8,25 +8,34 @@
 #include "Utils/ShaderProgram.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
+#include <iostream>
 #include <GL/gl.h>
 
 #define GLSL(src) "#version 330 core\n" #src
 
 static auto g_BaseVertexShader = GLSL(
-	layout (location = 0) in vec3 aPos;
+	layout (location = 0) in uvec3 aPos;
+	layout(location = 1) in uvec3 aColor;
+
 	uniform mat4 u_ViewProjection;
+
+	out vec3 v_Color;
 
 	void main()
 	{
+		v_Color = vec3(aColor);
 		gl_Position = u_ViewProjection * vec4(aPos, 1.0);
 	}
 );
 
 static auto g_BaseFragmentShader = GLSL(
+	in vec3 v_Color;
+
 	out vec4 FragColor;
+
 	void main()
 	{
-		FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+		FragColor = vec4(v_Color, 1.0);
 	}
 );
 
@@ -40,17 +49,121 @@ namespace VoxelEngine
 	{
 		// m_Chunk.BuildMesh();
 
-		float vertices[] = {
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.0f,  0.5f, 0.0f
-		};
+		m_Vertices.clear();
+
+		m_BlockFaces[Top][0] = glm::vec4(0, 1, 0, 1);
+		m_BlockFaces[Top][1] = glm::vec4(0, 1, 1, 1);
+		m_BlockFaces[Top][2] = glm::vec4(1, 1, 0, 1);
+		m_BlockFaces[Top][3] = glm::vec4(1, 1, 0, 1);
+		m_BlockFaces[Top][4] = glm::vec4(0, 1, 1, 1);
+		m_BlockFaces[Top][5] = glm::vec4(1, 1, 1, 1);
+
+		m_BlockFaces[Bottom][0] = glm::vec4(0, 0, 0, 1);
+		m_BlockFaces[Bottom][1] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Bottom][2] = glm::vec4(0, 0, 1, 1);
+		m_BlockFaces[Bottom][3] = glm::vec4(0, 0, 1, 1);
+		m_BlockFaces[Bottom][4] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Bottom][5] = glm::vec4(1, 0, 1, 1);
+
+		m_BlockFaces[Front][0] = glm::vec4(0, 0, 1, 1);
+		m_BlockFaces[Front][1] = glm::vec4(1, 0, 1, 1);
+		m_BlockFaces[Front][2] = glm::vec4(0, 1, 1, 1);
+		m_BlockFaces[Front][3] = glm::vec4(0, 1, 1, 1);
+		m_BlockFaces[Front][4] = glm::vec4(1, 0, 1, 1);
+		m_BlockFaces[Front][5] = glm::vec4(1, 1, 1, 1);
+
+		m_BlockFaces[Backward][0] = glm::vec4(0, 0, 0, 1);
+		m_BlockFaces[Backward][1] = glm::vec4(0, 1, 0, 1);
+		m_BlockFaces[Backward][2] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Backward][3] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Backward][4] = glm::vec4(0, 1, 0, 1);
+		m_BlockFaces[Backward][5] = glm::vec4(1, 1, 0, 1);
+
+		m_BlockFaces[Left][0] = glm::vec4(0, 1, 0, 1);
+		m_BlockFaces[Left][1] = glm::vec4(0, 0, 0, 1);
+		m_BlockFaces[Left][2] = glm::vec4(0, 1, 1, 1);
+		m_BlockFaces[Left][3] = glm::vec4(0, 1, 1, 1);
+		m_BlockFaces[Left][4] = glm::vec4(0, 0, 0, 1);
+		m_BlockFaces[Left][5] = glm::vec4(0, 0, 1, 1);
+
+		m_BlockFaces[Right][0] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Right][1] = glm::vec4(1, 1, 0, 1);
+		m_BlockFaces[Right][2] = glm::vec4(1, 0, 1, 1);
+		m_BlockFaces[Right][3] = glm::vec4(1, 0, 1, 1);
+		m_BlockFaces[Right][4] = glm::vec4(1, 1, 0, 1);
+		m_BlockFaces[Right][5] = glm::vec4(1, 1, 1, 1);
+
+		for (int x = 0; x < CHUNK_SIZE_X; ++x)
+		{
+			for (int y = 0; y < CHUNK_SIZE_Y; ++y)
+			{
+				for (int z = 0; z < CHUNK_SIZE_Z; ++z)
+				{
+					auto current = m_Chunk.GetBlock({x, y, z});
+
+					if (current == VoxelType::Air)
+					{
+						continue;
+					}
+
+					auto left = m_Chunk.GetBlock({x-1, y, z});
+					auto right = m_Chunk.GetBlock({x+1, y, z});
+					auto front = m_Chunk.GetBlock({x, y, z+1});
+					auto back = m_Chunk.GetBlock({x, y, z-1});
+					auto top = m_Chunk.GetBlock({x, y+1, z});
+					auto bottom = m_Chunk.GetBlock({x, y-1, z});
+
+
+					if (left == VoxelType::Air)
+					{
+						AddFace(glm::vec3(x, y, z), i8Color3(0, 0, 255), Left);
+					}
+
+					if (right == VoxelType::Air)
+					{
+						AddFace(glm::vec3(x, y, z), i8Color3(255, 255, 0), Right);
+					}
+
+					if (front == VoxelType::Air)
+					{
+						AddFace(glm::vec3(x, y, z), i8Color3(255, 0, 0), Front);
+					}
+
+					if (back == VoxelType::Air)
+					{
+						AddFace(glm::vec3(x, y, z), i8Color3(0, 255, 0), Backward);
+					}
+
+					if (top == VoxelType::Air)
+					{
+						AddFace(glm::vec3(x, y, z), i8Color3(255, 0, 255), Top);
+					}
+
+					if (bottom == VoxelType::Air)
+					{
+						AddFace(glm::vec3(x, y, z), i8Color3(255, 255, 255), Bottom);
+					}
+
+				}
+			}
+		}
 
 		m_VAO.Bind();
 
 		m_VBO.Bind();
-		m_VBO.BufferData(sizeof(vertices), vertices, GL_STATIC_DRAW);
-		m_VBO.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+		m_VBO.VertexAttribIPointer(
+			0, // layout (aPos)
+			3, // x, y, z
+			GL_UNSIGNED_BYTE,
+			sizeof(Vertex),
+			reinterpret_cast<void*>(offsetof(Vertex, position)));
+		m_VBO.VertexAttribIPointer(
+			1,
+			3, // r, g, b
+			GL_UNSIGNED_BYTE,
+			sizeof(Vertex),
+			reinterpret_cast<void*>(offsetof(Vertex, color)));
+		m_VBO.BufferData(m_Vertices.size() * sizeof(Vertex), &m_Vertices.front(), GL_STATIC_DRAW);
 		m_VBO.Unbind();
 
 		m_VAO.Unbind();
@@ -71,6 +184,15 @@ namespace VoxelEngine
 			ImGui::Text("Pitch: %.2f", m_Camera.GetPitch());
 		}
 
+		if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Chunk Size: %dx%dx%d", CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z);
+			ImGui::Text("Total Voxels: %d", CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z);
+			ImGui::Text("Vertices: %d", m_Vertices.size());
+			ImGui::Text("Triangles: %d", m_Vertices.size() / 3);
+			ImGui::Text("Quads: %d", (m_Vertices.size() / 3) / 2);
+		}
+
 
 		ImGui::End();
 	}
@@ -80,12 +202,12 @@ namespace VoxelEngine
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);  // Enable depth testing
-
+		glEnable(GL_CULL_FACE);
 
 		m_ShaderProgram.Use();
 		m_ShaderProgram.SetMatrix4("u_ViewProjection", m_Camera.GetViewProjectionMatrix());
 		m_VAO.Bind();
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, m_Vertices.size());
 		m_VAO.Unbind();
 		// m_Chunk.BuildMesh();
 		// m_ShaderProgram.Use();
@@ -111,7 +233,41 @@ namespace VoxelEngine
 	void Engine::OnWindowResize(const int width, const int height)
 	{
 		glViewport(0, 0, width, height);
-		m_Camera.SetPerspective(70.0, width / height, 0.1, 500.0);
+
+		float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+		m_Camera.SetPerspective(70.0, aspectRatio, 0.1, 500.0);
+
+		std::cout << "width: " << width << " height: " << height << std::endl;
+		std::cout << "Aspect Ratio: " << aspectRatio << std::endl;
 	}
 
+	void Engine::AddFace(const glm::vec3& position, const i8Color3& color, BlockFaceType faceType)
+	{
+		const auto translation = glm::vec4(position, 0.0f);
+
+		const auto blockFace = m_BlockFaces[faceType];
+
+		Vertex v[6];
+
+		v[0].position = translation + blockFace[0];
+		v[0].color = color;
+
+		v[1].position = translation + blockFace[1];
+		v[1].color = color;
+
+		v[2].position = translation + blockFace[2];
+		v[2].color = color;
+
+		v[3].position = translation + blockFace[3];
+		v[3].color = color;
+
+		v[4].position = translation + blockFace[4];
+		v[4].color = color;
+
+		v[5].position = translation + blockFace[5];
+		v[5].color = color;
+
+		m_Vertices.push_back(v[0]); m_Vertices.push_back(v[1]); m_Vertices.push_back(v[2]);
+		m_Vertices.push_back(v[3]); m_Vertices.push_back(v[4]); m_Vertices.push_back(v[5]);
+	}
 } // VoxelEngine

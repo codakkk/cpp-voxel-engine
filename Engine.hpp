@@ -6,7 +6,7 @@
 #define ENGINE_HPP
 
 #include "Camera.hpp"
-#include "Chunk.hpp"
+#include "World/Chunk.hpp"
 #include "Utils/ShaderProgram.hpp"
 #include "Utils/Vao.hpp"
 #include "Utils/Vbo.hpp"
@@ -32,12 +32,18 @@ public:
 private:
 	Camera m_Camera;
 
-	Chunk m_Chunk;
+	World::Chunk m_Chunk;
 
 	Utils::VAO m_VAO;
 	Utils::VBO m_VBO;
 
 	Utils::ShaderProgram m_ShaderProgram;
+
+	std::vector<Vertex> m_Vertices;
+
+	std::unordered_map<BlockFaceType, glm::vec4[6]> m_BlockFaces;
+
+	void AddFace(const glm::vec3& position, const i8Color3& color, BlockFaceType faceType);
 };
 
 } // VoxelEngine

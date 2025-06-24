@@ -14,7 +14,9 @@ namespace VoxelEngine
 		Left = 2,
 		Right = 3,
 		Front = 4,
-		Backward = 5
+		Back = 5,
+
+		Last
 	};
 }
 

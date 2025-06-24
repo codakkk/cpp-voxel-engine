@@ -6,13 +6,16 @@
 #define ENGINE_HPP
 
 #include "Camera.hpp"
+#include "Enums.hpp"
 #include "World/Chunk.hpp"
 #include "Utils/ShaderProgram.hpp"
-#include "Utils/Vao.hpp"
-#include "Utils/Vbo.hpp"
 
 
 namespace VoxelEngine {
+
+struct i8Color3;
+struct Vertex;
+
 class Engine {
 
 public:
@@ -23,7 +26,7 @@ public:
 
 	void OnWindowResize(int width, int height);
 
-	void Update(float deltaTime);
+	void Update(float deltaTime) const;
 
 	void RenderUi() const;
 
@@ -34,12 +37,13 @@ private:
 
 	World::Chunk m_Chunk;
 
-	Utils::VAO m_VAO;
-	Utils::VBO m_VBO;
+	GLuint m_VAO;
+	GLuint m_VBO;
 
 	Utils::ShaderProgram m_ShaderProgram;
 
 	std::vector<Vertex> m_Vertices;
+	std::vector<GLuint> m_Indices;
 
 	std::unordered_map<BlockFaceType, glm::vec4[6]> m_BlockFaces;
 

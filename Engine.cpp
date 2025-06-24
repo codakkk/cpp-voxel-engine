@@ -6,6 +6,7 @@
 
 #include "imgui.h"
 #include "Utils/ShaderProgram.hpp"
+#include "Utils/Vertex.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
 #include <iostream>
@@ -72,12 +73,12 @@ namespace VoxelEngine
 		m_BlockFaces[Front][4] = glm::vec4(1, 0, 1, 1);
 		m_BlockFaces[Front][5] = glm::vec4(1, 1, 1, 1);
 
-		m_BlockFaces[Backward][0] = glm::vec4(0, 0, 0, 1);
-		m_BlockFaces[Backward][1] = glm::vec4(0, 1, 0, 1);
-		m_BlockFaces[Backward][2] = glm::vec4(1, 0, 0, 1);
-		m_BlockFaces[Backward][3] = glm::vec4(1, 0, 0, 1);
-		m_BlockFaces[Backward][4] = glm::vec4(0, 1, 0, 1);
-		m_BlockFaces[Backward][5] = glm::vec4(1, 1, 0, 1);
+		m_BlockFaces[Back][0] = glm::vec4(0, 0, 0, 1);
+		m_BlockFaces[Back][1] = glm::vec4(0, 1, 0, 1);
+		m_BlockFaces[Back][2] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Back][3] = glm::vec4(1, 0, 0, 1);
+		m_BlockFaces[Back][4] = glm::vec4(0, 1, 0, 1);
+		m_BlockFaces[Back][5] = glm::vec4(1, 1, 0, 1);
 
 		m_BlockFaces[Left][0] = glm::vec4(0, 1, 0, 1);
 		m_BlockFaces[Left][1] = glm::vec4(0, 0, 0, 1);
@@ -101,7 +102,7 @@ namespace VoxelEngine
 				{
 					auto current = m_Chunk.GetBlock({x, y, z});
 
-					if (current == VoxelType::Air)
+					if (current == false)
 					{
 						continue;
 					}
@@ -114,32 +115,32 @@ namespace VoxelEngine
 					auto bottom = m_Chunk.GetBlock({x, y-1, z});
 
 
-					if (left == VoxelType::Air)
+					if (left == false)
 					{
 						AddFace(glm::vec3(x, y, z), i8Color3(0, 0, 255), Left);
 					}
 
-					if (right == VoxelType::Air)
+					if (right == false)
 					{
 						AddFace(glm::vec3(x, y, z), i8Color3(255, 255, 0), Right);
 					}
 
-					if (front == VoxelType::Air)
+					if (front == false)
 					{
 						AddFace(glm::vec3(x, y, z), i8Color3(255, 0, 0), Front);
 					}
 
-					if (back == VoxelType::Air)
+					if (back == false)
 					{
-						AddFace(glm::vec3(x, y, z), i8Color3(0, 255, 0), Backward);
+						AddFace(glm::vec3(x, y, z), i8Color3(0, 255, 0), Back);
 					}
 
-					if (top == VoxelType::Air)
+					if (top == false)
 					{
 						AddFace(glm::vec3(x, y, z), i8Color3(255, 0, 255), Top);
 					}
 
-					if (bottom == VoxelType::Air)
+					if (bottom == false)
 					{
 						AddFace(glm::vec3(x, y, z), i8Color3(255, 255, 255), Bottom);
 					}
@@ -148,28 +149,33 @@ namespace VoxelEngine
 			}
 		}
 
-		m_VAO.Bind();
+		glGenVertexArrays(1, &m_VAO);
+		glBindVertexArray(m_VAO);
 
-		m_VBO.Bind();
-		m_VBO.VertexAttribIPointer(
-			0, // layout (aPos)
-			3, // x, y, z
-			GL_UNSIGNED_BYTE,
-			sizeof(Vertex),
-			reinterpret_cast<void*>(offsetof(Vertex, position)));
-		m_VBO.VertexAttribIPointer(
-			1,
-			3, // r, g, b
-			GL_UNSIGNED_BYTE,
-			sizeof(Vertex),
-			reinterpret_cast<void*>(offsetof(Vertex, color)));
-		m_VBO.BufferData(m_Vertices.size() * sizeof(Vertex), &m_Vertices.front(), GL_STATIC_DRAW);
-		m_VBO.Unbind();
+		glGenBuffers(1, &m_VBO);
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
 
-		m_VAO.Unbind();
+		/// aPos
+		glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, position)));
+		glEnableVertexAttribArray(0);
+
+		/// aColor
+		glVertexAttribIPointer(1, 3, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, color)));
+		glEnableVertexAttribArray(1);
+
+		/// Buffer data to VBO
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * m_Vertices.size(), &m_Vertices.front(), GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		glBindVertexArray(0);
 	}
 
-	Engine::~Engine() {}
+	Engine::~Engine()
+	{
+		glDeleteBuffers(1, &m_VBO);
+		glDeleteVertexArrays(1, &m_VAO);
+	}
 
 	void Engine::RenderUi() const
 	{
@@ -206,25 +212,18 @@ namespace VoxelEngine
 
 		m_ShaderProgram.Use();
 		m_ShaderProgram.SetMatrix4("u_ViewProjection", m_Camera.GetViewProjectionMatrix());
-		m_VAO.Bind();
+
+		glBindVertexArray(m_VAO);
 		glDrawArrays(GL_TRIANGLES, 0, m_Vertices.size());
-		m_VAO.Unbind();
-		// m_Chunk.BuildMesh();
-		// m_ShaderProgram.Use();
-		// m_ShaderProgram.SetMatrix4("u_ViewProjection", m_Camera.GetProjectionMatrix());
-		// const auto meshBuilder = m_Chunk.p_MeshBuilder;
-		//
-		// meshBuilder.VAO.Bind();
-		// glDrawElements(GL_TRIANGLES, floor(meshBuilder.VerticesCount / 4) * 6, GL_UNSIGNED_INT, nullptr);
-		// meshBuilder.VAO.Unbind();
+		glBindVertexArray(0);
 	}
 
-	void Engine::Update(float deltaTime)
+	void Engine::Update(float deltaTime) const
 	{
 
 	}
 
-	void Engine::Input(float deltaTime)
+	void Engine::Input(const float deltaTime)
 	{
 		m_Camera.ProcessKeyboard(deltaTime);
 		m_Camera.ProcessMouseMovement();

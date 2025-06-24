@@ -64,23 +64,16 @@ add_executable(${PROJECT_NAME}
         main.cpp
         Camera.cpp Camera.hpp
         World/Chunk.cpp World/Chunk.hpp
-        Voxel.cpp Voxel.hpp
         Enums.hpp
-        Utils/Vbo.cpp
-        Utils/Vbo.hpp
         Utils/Shader.cpp
         Utils/Shader.hpp
         Utils/ShaderProgram.cpp
         Utils/ShaderProgram.hpp
-        Utils/Vao.cpp
-        Utils/Vao.hpp
         Engine.cpp
         Engine.hpp
         Utils/Input.cpp
         Utils/Input.hpp
         Utils/Vertex.hpp
-        MeshBuilder.cpp
-        MeshBuilder.hpp
         Utils/IndexBuffer.cpp
         Utils/IndexBuffer.hpp
         Constants.hpp

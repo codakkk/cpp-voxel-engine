@@ -21,12 +21,12 @@ namespace Input
 
 	static float g_MouseX, g_MouseY, g_MouseXOffset, g_MouseYOffset;
 
-	void Input::Init(GLFWwindow* window)
+	void Init(GLFWwindow* window)
 	{
 		g_Window = window;
 	}
 
-	void Input::ProcessKeyboard()
+	void ProcessKeyboard()
 	{
 		static bool wasPressed = false;
 
@@ -57,7 +57,7 @@ namespace Input
 		}
 	}
 
-	void Input::ProcessMouse(double xpos, double ypos)
+	void ProcessMouse(double xpos, double ypos)
 	{
 		static float lastX = xpos, lastY = ypos;
 
@@ -83,7 +83,7 @@ namespace Input
 		// camera.ProcessMouse(offsetX, offsetY);
 	}
 
-	void Input::ProcessMouseButtons()
+	void ProcessMouseButtons()
 	{
 		if (g_IsProcessingInput == false)
 		{
@@ -103,13 +103,12 @@ namespace Input
 		g_MouseXOffset = g_MouseYOffset = 0;
 	}
 
-
-	bool Input::IsKeyDown(const int key)
+	bool IsKeyDown(const int key)
 	{
 		return g_CurrentKeys[key];
 	}
 
-	bool Input::IsKeyPressed(const int key)
+	bool IsKeyPressed(const int key)
 	{
 		return g_CurrentKeys[key] && !g_PreviousKeys[key];
 	}

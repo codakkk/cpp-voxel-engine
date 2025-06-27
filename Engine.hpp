@@ -5,6 +5,8 @@
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
 
+#include <vector>
+
 #include "Camera.hpp"
 #include "Enums.hpp"
 #include "World/Chunk.hpp"
@@ -56,7 +58,11 @@ private:
 	std::unordered_map<BlockFaceType, glm::vec4[4]> m_BlockFaces;
 
 	void CreateMesh();
-	void AddFace(const glm::vec3& position, const i8Color3& color, BlockFaceType faceType);
+	void AddQuad(const glm::i8vec3& v0, const glm::i8vec3& v1, const glm::i8vec3& v2, const glm::i8vec3& v3, const i8Color3& color, bool flip);
+
+	bool IsFaceVisible(glm::ivec3 pos, int axis, bool backFace) const;
+
+	i8Color3 GetColorForFace(BlockFaceType face) const;
 };
 
 } // VoxelEngine

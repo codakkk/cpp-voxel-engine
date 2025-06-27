@@ -186,7 +186,7 @@ namespace VoxelEngine
 		m_ShaderProgram.Use();
 		m_ShaderProgram.SetMatrix4("u_ViewProjection", m_Camera.GetViewProjectionMatrix());
 
-		if (m_Vertices.size() > 0)
+		if (!m_Vertices.empty())
 		{
 			glBindVertexArray(m_VAO);
 			glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
@@ -271,121 +271,163 @@ namespace VoxelEngine
 	}
 
 	void Engine::CreateMesh()
+{
+	if (!m_IsMeshDirty)
+		return;
+
+	m_IsMeshDirty = false;
+
+	m_IndexOffset = 0;
+	m_Vertices.clear();
+	m_Indices.clear();
+
+	glm::ivec3 dims(CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z);
+
+	for (int face = 0; face < 6; ++face)
 	{
-		if (m_IsMeshDirty == false)
+		bool isBackFace = face > 2;
+		int dir = face % 3;
+		int u = (dir + 1) % 3;
+		int v = (dir + 2) % 3;
+
+		glm::ivec3 start(0);
+		glm::ivec3 curr(0);
+
+		for (start[dir] = 0; start[dir] < dims[dir]; ++start[dir])
 		{
-			return;
-		}
+			std::vector<std::vector<bool>> merged(dims[u], std::vector<bool>(dims[v], false));
 
-		m_IsMeshDirty = false;
-
-		m_IndexOffset = 0;
-		m_Vertices.clear();
-		m_Indices.clear();
-
-		for (int x = 0; x < CHUNK_SIZE_X; ++x)
-		{
-			for (int y = 0; y < CHUNK_SIZE_Y; ++y)
+			for (start[u] = 0; start[u] < dims[u]; ++start[u])
 			{
-				for (int z = 0; z < CHUNK_SIZE_Z; ++z)
+				for (start[v] = 0; start[v] < dims[v]; ++start[v])
 				{
-					const auto current = m_Chunk.GetBlock({x, y, z});
-
-					if (current == false)
-					{
+					if (merged[start[u]][start[v]])
 						continue;
-					}
 
-					const auto left = m_EnableVoxelFaceCulling && m_Chunk.GetBlock({x-1, y, z});
-					const auto right = m_EnableVoxelFaceCulling && m_Chunk.GetBlock({x+1, y, z});
-					const auto front = m_EnableVoxelFaceCulling && m_Chunk.GetBlock({x, y, z+1});
-					const auto back = m_EnableVoxelFaceCulling && m_Chunk.GetBlock({x, y, z-1});
-					const auto top = m_EnableVoxelFaceCulling && m_Chunk.GetBlock({x, y+1, z});
-					const auto bottom = m_EnableVoxelFaceCulling && m_Chunk.GetBlock({x, y-1, z});
+					bool voxel = m_Chunk.GetBlock(start);
 
+					if (!voxel || !IsFaceVisible(start, dir, isBackFace))
+						continue;
 
-					if (left == false)
+					glm::ivec3 quadSize(0);
+					curr = start;
+
+					// Extend in v direction
+					for (++curr[v]; curr[v] < dims[v] &&
+						!merged[curr[u]][curr[v]] &&
+						m_Chunk.GetBlock(curr) &&
+						m_Chunk.GetBlock(curr) == voxel &&
+						IsFaceVisible(curr, dir, isBackFace); ++curr[v]) {}
+
+					quadSize[v] = curr[v] - start[v];
+
+					// Extend in u direction
+					curr = start;
+					for (++curr[u]; curr[u] < dims[u]; ++curr[u])
 					{
-						AddFace(glm::vec3(x, y, z), i8Color3(0, 0, 255), Left);
+						bool allMatch = true;
+						for (curr[v] = start[v]; curr[v] < start[v] + quadSize[v]; ++curr[v])
+						{
+							if (merged[curr[u]][curr[v]] ||
+								!m_Chunk.GetBlock(curr) ||
+								m_Chunk.GetBlock(curr) != voxel ||
+								!IsFaceVisible(curr, dir, isBackFace))
+							{
+								allMatch = false;
+								break;
+							}
+						}
+						if (!allMatch)
+							break;
 					}
+					quadSize[u] = curr[u] - start[u];
 
-					if (right == false)
-					{
-						AddFace(glm::vec3(x, y, z), i8Color3(255, 255, 0), Right);
-					}
+					// Mark merged area
+					for (int du = 0; du < quadSize[u]; ++du)
+						for (int dv = 0; dv < quadSize[v]; ++dv)
+							merged[start[u] + du][start[v] + dv] = true;
 
-					if (front == false)
-					{
-						AddFace(glm::vec3(x, y, z), i8Color3(255, 0, 0), Front);
-					}
+					// Construct quad
+					glm::ivec3 m(0), n(0);
+					m[u] = quadSize[u];
+					n[v] = quadSize[v];
 
-					if (back == false)
-					{
-						AddFace(glm::vec3(x, y, z), i8Color3(0, 255, 0), Back);
-					}
+					glm::ivec3 offset = start;
+					offset[dir] += isBackFace ? 0 : 1;
 
-					if (top == false)
-					{
-						AddFace(glm::vec3(x, y, z), i8Color3(255, 0, 255), Top);
-					}
+					glm::vec3 v0 = glm::vec3(offset);
+					glm::vec3 v1 = glm::vec3(offset + m);
+					glm::vec3 v2 = glm::vec3(offset + m + n);
+					glm::vec3 v3 = glm::vec3(offset + n);
 
-					if (bottom == false)
-					{
-						AddFace(glm::vec3(x, y, z), i8Color3(255, 255, 255), Bottom);
-					}
-
+					// Use face enums to drive color for now
+					i8Color3 color = GetColorForFace((BlockFaceType)face);
+					AddQuad(v0, v1, v2, v3, color, isBackFace);
 				}
 			}
 		}
-
-		glBindVertexArray(m_VAO);
-
-		// VBO
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * m_Vertices.size(), &m_Vertices.front(), GL_STATIC_DRAW);
-
-		/// EBO
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(GLuint), &m_Indices.front(), GL_STATIC_DRAW);
-
-		/// aPos
-		glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, position)));
-		glEnableVertexAttribArray(0);
-
-		/// aColor
-		glVertexAttribIPointer(1, 3, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, color)));
-		glEnableVertexAttribArray(1);
-
-		// Unbind
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
 	}
 
-	void Engine::AddFace(const glm::vec3& position, const i8Color3& color, const BlockFaceType faceType)
+	// GPU buffer upload
+	glBindVertexArray(m_VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * m_Vertices.size(), m_Vertices.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * m_Indices.size(), m_Indices.data(), GL_STATIC_DRAW);
+
+	glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribIPointer(1, 3, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+	void Engine::AddQuad(const glm::i8vec3& v0, const glm::i8vec3& v1, const glm::i8vec3& v2, const glm::i8vec3& v3, const i8Color3& color, bool flip)
 	{
-		const auto translation = glm::vec4(position, 0.0f);
+		std::vector<Vertex> quad(4);
+		quad[0].position = v0;
+		quad[0].color = color;
+		quad[1].position = v1;
+		quad[1].color = color;
+		quad[2].position = v2;
+		quad[2].color = color;
+		quad[3].position = v3;
+		quad[3].color = color;
 
-		const auto blockFace = m_BlockFaces[faceType];
 
-		std::vector<Vertex> vertices = {{}, {}, {}, {}};
+		std::vector<GLuint> indices = flip
+			? std::vector<GLuint>{ m_IndexOffset + 2, m_IndexOffset + 1, m_IndexOffset + 0,
+								   m_IndexOffset + 0, m_IndexOffset + 3, m_IndexOffset + 2 }
+		: std::vector<GLuint>{ m_IndexOffset + 0, m_IndexOffset + 1, m_IndexOffset + 2,
+							   m_IndexOffset + 2, m_IndexOffset + 3, m_IndexOffset + 0 };
 
-		for (int i = 0; i < 4; ++i)
-		{
-			vertices[i].position = translation + blockFace[i];
-			vertices[i].color = color;
-		}
-
-		std::vector<GLuint> indices = {
-			m_IndexOffset + 0, m_IndexOffset + 1, m_IndexOffset + 2,
-			m_IndexOffset + 2, m_IndexOffset + 3, m_IndexOffset + 0,
-		};
-		m_IndexOffset += 4;
-
-		m_Vertices.insert(m_Vertices.end(), vertices.begin(), vertices.end());
+		m_Vertices.insert(m_Vertices.end(), quad.begin(), quad.end());
 		m_Indices.insert(m_Indices.end(), indices.begin(), indices.end());
+		m_IndexOffset += 4;
 	}
 
+	bool Engine::IsFaceVisible(glm::ivec3 pos, int axis, bool backFace) const
+	{
+		pos[axis] += backFace ? -1 : 1;
+		return !m_Chunk.IsInBounds(pos) || !m_Chunk.GetBlock(pos);
+	}
 
+	i8Color3 Engine::GetColorForFace(BlockFaceType face) const
+	{
+		switch (face)
+		{
+			case Left:   return i8Color3(0, 0, 255);
+			case Right:  return i8Color3(255, 255, 0);
+			case Front:  return i8Color3(255, 0, 0);
+			case Back:   return i8Color3(0, 255, 0);
+			case Top:    return i8Color3(255, 0, 255);
+			case Bottom: return i8Color3(255, 255, 255);
+			default:     return i8Color3(127, 127, 127);
+		}
+	}
 } // VoxelEngine
